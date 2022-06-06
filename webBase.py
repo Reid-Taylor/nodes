@@ -1,22 +1,11 @@
 import dash
-from dash import dcc, callback_context
-import dash_daq as daq
-from dash import html
-import networkx as nx 
-import plotly.graph_objs as go
-
-import numpy as np
-import pandas as pd
-from colour import Color
-from datetime import datetime 
+from dash import html, dcc, callback_context
 from textwrap import dedent as d 
-import json
-
 import nodes
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app.title = "Graph Theory Network"
+app.title = "Markovian Boltzmann Machine"
 
 EPOCHS=50
 NODES=12
@@ -34,7 +23,7 @@ styles = {
 
 app.layout = html.Div([
     # Title
-    html.Div([html.H1("Transaction Network Graph")],
+    html.Div([html.H1("Transaction Graph Network")],
              className="row",
              style={'textAlign': "center"}),
 
