@@ -112,7 +112,7 @@ app.layout = html.Div([
                                     0: {'label' : '0'},
                                     100: {'label' : '100'}
                                 },
-                                value=0,
+                                value=G.age,
                                 step=1,
                                 id='epoch-slider'
                             ),
@@ -139,20 +139,7 @@ app.layout = html.Div([
                     html.Div(id="output2")
                 ],
                 style={'height': '200px'}
-            ),
-            html.Div(
-                className="twelve columns",
-                children=[#TODO Add in download network info, then load from csv abilities
-                    dcc.Markdown(d("""
-                    **Activation Based Coloring**
-                    """)),
-                    daq.BooleanSwitch(id='my-boolean-switch', on=False),
-                    html.Br(),
-                    html.Div(id="button-node-activation-coloring")
-                ],
-                style={'height': '300px'}
-            )
-                ]
+            )]
             ),
         ]
     )
@@ -162,11 +149,11 @@ app.layout = html.Div([
 @app.callback(
     dash.dependencies.Output('my-graph', 'figure'),
     [dash.dependencies.Input('my-range-slider', 'value'), dash.dependencies.Input('input1', 'value'),
-     dash.dependencies.Input('epoch-slider', 'value'), dash.dependencies.Input('my-boolean-switch','on'),
+     dash.dependencies.Input('epoch-slider', 'value'),
      dash.dependencies.Input('decrease-val', 'n_clicks'), dash.dependencies.Input('increase-val', 'n_clicks')
     ]
 )
-def update_output(value,input1, input2, input3, but1, but2):
+def update_output(value,input1, input2, but1, but2):
     global G
     global graph
     if callback_context.triggered_id in ['my-range-slider', 'input1', 'input2']:
@@ -176,19 +163,16 @@ def update_output(value,input1, input2, input3, but1, but2):
             graph = G.web_app()
         else:
             pass
-    elif callback_context.triggered_id in ['epoch-slider', 'increase-val','decrease-val']:
+    elif callback_context.triggered_id in ['epoch-slider','increase-val','decrease-val']:
         if callback_context.triggered_id == 'epoch-slider':
-            pass
+            G.forward(input2-G.age)
+            G.age = input2
         elif callback_context.triggered_id == 'increase-val':
             G.forward(1)
             graph = G.web_app()
-            print()
-        else:
-            pass
-    
-    YEAR = value
-    ACCOUNT = input1
-    print(f"Dropout: \t{value}\nNetwork Size:\t{input1}\nEpochs: \t{input2}\nColored: \t{input3}\n")
+            G.age += 1
+        elif callback_context.triggered_id == 'decrease-val':
+            G.age -= 1
 
     return graph
 ################################callback for right side components

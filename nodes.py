@@ -22,7 +22,7 @@ import json
 r = lambda: random.randint(0,255)
 
 class Network():
-    def __init__(self,*,dropout=0.75,size=10,threshold=0.65,decay=0.05,init_activation=0.1):
+    def __init__(self,*,dropout=0.5,size=10,threshold=0.65,decay=0.05,init_activation=0.1):
         self.nodes=[]
         self.size=size
         self.age=0
@@ -31,8 +31,7 @@ class Network():
         self.decay=decay
         self.initial_activation=init_activation
 
-        self_loops = random.sample([(x,x) for x in range(size)], k=round(size*(dropout)))
-
+        self_loops = [(x,x) for x in range(size)]
         links = list(permutations(range(size), 2))
         links = random.sample(links, k=round(len(links) * (1-dropout)))
         links.extend(self_loops)
@@ -40,10 +39,11 @@ class Network():
         for node in range(size):
             rel_links = list(filter(lambda y: y[0] == node, links))
 
-            weights = list(np.round(np.random.uniform(0,1,len(rel_links)), 2))
+            weights = list(np.round(np.random.uniform(0.00001,1,len(rel_links)), 2))
             weights = np.round(weights / np.sum(weights), 3)
 
             self.nodes.append(Node(node, rel_links, weights))
+        self.activate()
 
     def __save__(self):
         edge_data = pd.DataFrame(self._get_ebunch_as_tuples(), columns=['start','finish','weight'])
@@ -126,23 +126,36 @@ class Network():
             markov[finish][start] = weight
         return markov
 
-    def forward(self, epochs):
+    def backward(self,epochs):
+        above_threshold = [x<self.threshold for x in self._get_active()]
         markov = self._get_active_matrix()
-        self._get_active_matrix
         current = np.asarray(self._get_active())
+        old = np.asarray(self._get_active())
         for epoch in range(epochs):
-            print(f"current: {current.shape}\nmarkov: {markov.shape}\n")
-            current = np.matmul(current, markov)
+            current = np.matmul(markov, current)
+            # current = current * (1/np.sum(current))
             self.age += 1
         self._set_active(current.tolist())
-        return current
+        return True
+
+    def forward(self, epochs):
+        #TODO add in random activations on a small delta chance.
+        #TODO add in a threshold which limits when nodes can fire
+        above_threshold = [x<self.threshold for x in self._get_active()]
+        markov = self._get_active_matrix()
+        current = np.asarray(self._get_active())
+        old = np.asarray(self._get_active())
+        for epoch in range(epochs):
+            current = np.matmul(markov, current)
+            # current = current * (1/np.sum(current))
+            self.age += 1
+        self._set_active(current.tolist())
+        return True
 
     def web_app(self):
-        pos = self._get_positions()
-        self.activate()
+        self._get_positions()
 
         traceRecode = []
-
         for edge in self._get_ebunch():
             x0, y0 = self.nodes[edge.start].pos
             x1, y1 = self.nodes[edge.finish].pos
@@ -165,7 +178,6 @@ class Network():
             node_trace['y'] += tuple([y])
             node_trace['hovertext'] += tuple([hovertext])
             node_trace['text'] += tuple([text])
-
         traceRecode.append(node_trace)
     ##################################################################
         middle_hover_trace = go.Scatter(x=[], y=[], hovertext=[], mode='markers', hoverinfo="text",
@@ -180,7 +192,6 @@ class Network():
             middle_hover_trace['x'] += tuple([(x0 + x1) / 2])
             middle_hover_trace['y'] += tuple([(y0 + y1) / 2])
             middle_hover_trace['hovertext'] += tuple([hovertext])
-
         traceRecode.append(middle_hover_trace)
 
         figure = {
